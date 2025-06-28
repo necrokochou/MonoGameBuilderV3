@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -15,24 +16,42 @@ public class Character {
 
     private Stage stage;
 
-    private InputManager inputManager;
-    private ActionManager actionManager;
+    // private InputManager input;
     
     private Vector2 actualPosition;
     private Vector2 gamePosition;
+    private Vector2 velocity;
+    private Vector2 move;
+
+    private int jumpCounter;
+    private int maxJumpCount;
     
     private float movementSpeed;
     private float jumpPower;
+    private float gravity;
 
     private bool isFacingRight;
     private bool isGrounded;
+    private bool isWalking;
+    private bool isJumping;
+    private bool isFalling;
+    private bool isGettingHit;
+    private bool isAttacking;
+    private bool isHoldingJump;
     
     private Animation currentAnimation;
     private Animation idleAnimation;
     private Animation walkAnimation;
+    private Animation jumpAnimation;
+    private Animation fallAnimation;
+    private Animation getHitAnimation;
+    private Animation attackAnimation;
     
     private Rectangle collisionBox;
     private Point collisionBoxOffset;
+
+    private KeyboardState keyState;
+    private MouseState mouseState;
 
     private static GraphicsDevice graphicsDevice;
     private Texture2D debugPixel;
@@ -45,13 +64,17 @@ public class Character {
         this.source = source;
         this.color = color;
         
+        // input = new();
+        
         isFacingRight = true;
 
-        actionManager = new(this);
-        inputManager = new();
+        movementSpeed = 150f;
+        jumpPower = 320f;
+        gravity = 700f;
+        maxJumpCount = 2;
         
         debugPixel = new(graphicsDevice, 1, 1);
-        
+        debugPixel.SetData(new[] {Color.White});
     }
 
 
@@ -62,9 +85,6 @@ public class Character {
     }
     
     // --- INSTANCE PROPERTIES ---
-    internal TextureFile TextureFile {
-        get => textureFile;
-    }
     internal int Columns {
         get => textureFile.Columns;
     }
@@ -74,44 +94,73 @@ public class Character {
     internal Texture2D Texture {
         get => textureFile.Texture;
     }
-    internal Rectangle Display {
-        get => display;
-    }
     internal Rectangle Source {
         get => source;
-    }
-    internal Color Color {
-        get => color;
     }
     internal Stage Stage {
         set => stage = value;
     }
-    internal Vector2 ActualPosition {
-        get => actualPosition;
-        set => actualPosition = value;
-    }
-    internal Vector2 GamePosition {
-        get => gamePosition;
-    }
-    internal float MovementSpeed {
-        get => movementSpeed;
-    }
-    internal float JumpPower {
-        get => jumpPower;
-    }
-    internal bool IsGrounded {
-        get => isGrounded;
-        set => isGrounded = value;
-    }
+    
 
     // METHODS
     // --- MAIN METHODS ---
     internal void Update(GameTime gameTime) {
-        inputManager.Update(Keyboard.GetState());
-        actionManager.Update(inputManager, gameTime);
+        float deltaTime = (float) gameTime.ElapsedGameTime.TotalSeconds;
+        // input.Update(Keyboard.GetState());
+        keyState = Keyboard.GetState();
+        mouseState = Mouse.GetState();
+        move = Vector2.Zero;
+
+        if (keyState.IsKeyDown(Keys.A)) {
+            move.X -= 1;
+            isFacingRight = false;
+        } else if (keyState.IsKeyDown(Keys.D)) {
+            move.X += 1;
+            isFacingRight = true;
+        } else {
+            move.X = 0;
+        }
+
+        if (keyState.IsKeyDown(Keys.Space) && jumpCounter < maxJumpCount && !isHoldingJump) {
+            velocity.Y = -jumpPower;
+            isGrounded = false;
+            jumpCounter++;
+            isHoldingJump = true;
+        }
+        if (keyState.IsKeyUp(Keys.Space))
+            isHoldingJump = false;
+
+        if (mouseState.LeftButton == ButtonState.Pressed) {
+            isAttacking = true;
+        }
         
-        currentAnimation = idleAnimation;
+        isWalking = velocity.X != 0 && isGrounded;
+        isJumping = velocity.Y < 0 && !isGrounded;
+        isFalling = velocity.Y > 0 && !isGrounded;
+
+        if (isAttacking) {
+            currentAnimation = attackAnimation;
+            isAttacking = false;
+        }
+        else if (isGettingHit) {
+            currentAnimation = getHitAnimation;
+            isGettingHit = false;
+        }
+        else if (isFalling) currentAnimation = fallAnimation;
+        else if (isJumping) currentAnimation = jumpAnimation;
+        else if (isWalking) currentAnimation = walkAnimation;
+        else currentAnimation = idleAnimation;
+        
         currentAnimation.Update();
+        
+        velocity.X = move.X * movementSpeed;
+        velocity.Y += gravity * deltaTime;
+        GetNextPosition(deltaTime);
+        
+        display.Location = actualPosition.ToPoint();
+        gamePosition = GetGamePos();
+        UpdateCollisionBox();
+        // DebugShowKeyPresses();
     }
     
     internal void Draw(SpriteBatch spriteBatch) {
@@ -124,7 +173,8 @@ public class Character {
             flip, 0f
         );
         
-        DebugCollisionBox(spriteBatch);
+        // DebugShowDisplay(spriteBatch);
+        // DebugCollisionBox(spriteBatch);
     }
     
     // --- STATIC METHODS ---
@@ -144,12 +194,110 @@ public class Character {
     }
     
     // --- INSTANCE METHODS ---
+    private void GetNextPosition(float deltaTime) {
+        Vector2 nextPosition = actualPosition;
+        
+        nextPosition.X += velocity.X * deltaTime;
+        // display.Location = new Point((int) nextPosition.X, (int) position.Y);
+        Rectangle nextHorizontalBox = new Rectangle(
+            (int) nextPosition.X + collisionBoxOffset.X,
+            (int) actualPosition.Y + collisionBoxOffset.Y,
+            collisionBox.Width,
+            collisionBox.Height
+        );
+        CheckDamageTiles(nextHorizontalBox);
+        if (!CheckCollision(nextHorizontalBox)) {
+            actualPosition.X = nextPosition.X;
+        } else {
+            velocity.X = 0;
+        }
+        
+        nextPosition.Y += velocity.Y * deltaTime;
+        // display.Location = new Point((int) position.X, (int) nextPosition.Y);
+        Rectangle nextVerticalBox = new Rectangle(
+            (int) actualPosition.X + collisionBoxOffset.X,
+            (int) nextPosition.Y + collisionBoxOffset.Y,
+            collisionBox.Width,
+            collisionBox.Height
+        );
+        if (!CheckCollision(nextVerticalBox)) {
+            actualPosition.Y = nextPosition.Y;
+            isGrounded = false;
+        } else {
+            if (velocity.Y > 0) {
+                isGrounded = true;
+                isJumping = false;
+                jumpCounter = 0;
+            }
+            
+            velocity.Y = 0;
+        }
+    }
+
+    private void CheckDamageTiles(Rectangle nextBox) {
+        foreach (Tile tile in stage.Tiles) {
+            if (tile == null) continue;
+
+            if (nextBox.Intersects(tile.Display) && tile.IsDamaging) {
+                isGettingHit = true;
+            }
+        }
+    }
+    
+    private void CheckCollectableTiles(Rectangle nextBox) {
+        for (int row = 0; row < stage.Rows; row++) {
+            for (int column = 0; column < stage.Columns; column++) {
+                if (stage.Tiles[row, column] == null) continue;
+                
+                if (nextBox.Intersects(stage.Tiles[row, column].Display) && stage.Tiles[row, column].IsCollectable) {
+                    stage.Tiles[row, column] = null;
+                }
+            }
+        }
+    }
+    
+    private bool CheckCollision(Rectangle nextBox) {
+        CheckCollectableTiles(nextBox);
+        
+        foreach (Tile tile in stage.Tiles) {
+            if (tile == null) continue;
+
+            if (nextBox.Intersects(tile.Display) && tile.IsSolid) {
+                // Console.WriteLine($"Collision with tile at: ({tile.Display.Location})");
+                return true;
+            }
+        }
+            
+        //Console.WriteLine($"No collision at: ({position})");
+        return false;
+    }
+    
+    public void UpdateCollisionBox() {
+        SetCollisionBox();
+    }
+    
     public void SetIdleAnimation(Point startFrame, Point endFrame, int interval) {
-        idleAnimation = Animation.Create(this, interval, startFrame, endFrame);
+        idleAnimation = Animation.Create(this, startFrame, endFrame, interval);
     }
 
     public void SetWalkAnimation(Point startFrame, Point endFrame, int interval) {
-        walkAnimation = Animation.Create(this, interval, startFrame, endFrame);
+        walkAnimation = Animation.Create(this, startFrame, endFrame, interval);
+    }
+
+    public void SetJumpAnimation(Point startFrame, Point endFrame, int interval) {
+        jumpAnimation = Animation.Create(this, startFrame, endFrame, interval);
+    }
+
+    public void SetFallAnimation(Point startFrame, Point endFrame, int interval) {
+        fallAnimation = Animation.Create(this, startFrame, endFrame, interval);
+    }
+
+    public void SetGetHitAnimation(Point startFrame, Point endFrame, int interval) {
+        getHitAnimation = Animation.Create(this, startFrame, endFrame, interval);
+    }
+    
+    public void SetAttackAnimation(Point startFrame, Point endFrame, int interval) {
+        attackAnimation = Animation.Create(this, startFrame, endFrame, interval);
     }
     
     private void SetCollisionBox() {
@@ -196,20 +344,13 @@ public class Character {
             collisionBoxOffset.Y = newY - display.Y;
             
             collisionBox = new Rectangle(newX, newY, maxWidth, maxHeight);
-            // collisionBoxEdges = new Rectangle(
-            //     collisionBox.X - 1,
-            //     collisionBox.Y - 1,
-            //     collisionBox.Width + 2,
-            //     collisionBox.Height + 2
-            // );
 
             // attackRangeBox = new Rectangle(collisionBox.X, collisionBox.Y, collisionBox.Width, collisionBox.Height);;
         }
         else {
             collisionBox = Rectangle.Empty;
             collisionBoxOffset = Point.Zero;
-            // collisionBoxEdges = Rectangle.Empty;
-            //
+            
             // attackRangeBox = Rectangle.Empty;
         }
     }
@@ -221,14 +362,40 @@ public class Character {
         posX = posX + TileSize / 2 - display.Width / 2;
         posY = posY + TileSize - display.Height;
         
+        display.Location = new Point(posX, posY);
         actualPosition = new Vector2(posX, posY);
-        display.Location = actualPosition.ToPoint();
         
         SetCollisionBox();
     }
     
+    private Vector2 GetGamePos() {
+        return new Vector2(collisionBox.X, collisionBox.Y) + new Vector2(collisionBox.Width / 2, collisionBox.Height);
+    }
+    
     // --- DEBUG METHODS ---
+    private void DebugShowDisplay(SpriteBatch spriteBatch) {
+        DrawHollowRect(spriteBatch, display, Color.Red, 2);
+    }
+    
     private void DebugCollisionBox(SpriteBatch spritebatch) {
-        spritebatch.Draw(debugPixel, collisionBox, Color.Yellow * 0.5f);
+        // spritebatch.Draw(debugPixel, collisionBox, Color.Yellow * 0.5f);
+        DrawHollowRect(spritebatch, collisionBox, Color.Yellow * 0.5f, 2);
+    }
+
+    private void DrawHollowRect(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness = 1) {
+        // TOP
+        spriteBatch.Draw(debugPixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+        // BOTTOM
+        spriteBatch.Draw(debugPixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
+        // LEFT
+        spriteBatch.Draw(debugPixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+        // RIGHT
+        spriteBatch.Draw(debugPixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
+    }
+
+    private void DebugShowKeyPresses() {
+        foreach (Keys key in keyState.GetPressedKeys()) {
+            Console.WriteLine($"{key}");
+        }
     }
 }

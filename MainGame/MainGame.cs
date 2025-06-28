@@ -48,6 +48,7 @@ public class MainGame : Game {
         TextureFile signsData = new TextureFile(Content.Load<Texture2D>("Signs"), 1, 12);
         TextureFile stones1Data = new TextureFile(Content.Load<Texture2D>("Stones1"), 1, 4);
         TextureFile stones2Data = new TextureFile(Content.Load<Texture2D>("Stones2"), 1, 4);
+        TextureFile goldCoinData = new TextureFile(Content.Load<Texture2D>("GoldCoin"), 1, 8);
         
         TextureFile heroKnightData = new TextureFile(Content.Load<Texture2D>("HeroKnight"), 9, 10);
         
@@ -65,8 +66,8 @@ public class MainGame : Game {
         Tile rockTile4 = Tile.Create(rockBlocksData, 0, 3);
         Tile plantsTile1 = Tile.Create(plantsData, 0, 0, false);
         Tile plantsTile2 = Tile.Create(plantsData, 0, 1, false);
-        Tile plantsTile3 = Tile.Create(plantsData, 0, 2, false);
-        Tile plantsTile4 = Tile.Create(plantsData, 0, 3, false);
+        Tile plantsTile3 = Tile.Create(plantsData, 0, 2, false, false, true);
+        Tile plantsTile4 = Tile.Create(plantsData, 0, 3, false, false, true);
         Tile frostLeavesTile1 = Tile.Create(frostLeavesData, 0, 0);
         Tile frostLeavesTile2 = Tile.Create(frostLeavesData, 0, 1);
         Tile frostLeavesTile3 = Tile.Create(frostLeavesData, 0, 2);
@@ -87,7 +88,7 @@ public class MainGame : Game {
         Tile stonesTile7 = Tile.Create(stones2Data, 0, 2, false);
         
         Character heroKnight = Character.Create(heroKnightData, 0, 0);
-        
+        Tile goldCoin = Tile.Create(goldCoinData, 0, 0, false, true);
         
         // --- STAGE SETUP ---
         stage1.Builder.SetBackground(background);
@@ -172,10 +173,23 @@ public class MainGame : Game {
         stage1.Builder.AddTile(stonesTile4, 19, 5);
         stage1.Builder.AddTile(stonesTile7, 19, 21);
         
-        stage1.Builder.SetCharacter(heroKnight, 19, 1);
+        stage1.Builder.AddTile(goldCoin, 12, 3);
+        stage1.Builder.AddTile(goldCoin, 13, 13);
+        stage1.Builder.AddTile(goldCoin, 16, 11);
+        stage1.Builder.AddTile(goldCoin, 12, 20);
+        stage1.Builder.AddTile(goldCoin, 15, 32);
+        stage1.Builder.AddTile(goldCoin, 12, 36);
+        stage1.Builder.AddTile(goldCoin, 7, 38);
+        stage1.Builder.AddTile(goldCoin, 24, 19);
+        
+        stage1.Builder.SetCharacter(heroKnight, 17, 1);
         
         stage1.Builder.Character.SetIdleAnimation(new Point(0, 0), new Point(0, 7), 5);
         stage1.Builder.Character.SetWalkAnimation(new Point(0, 8), new Point(1, 7), 5);
+        stage1.Builder.Character.SetJumpAnimation(new Point(3, 7), new Point(4, 4), 5);
+        stage1.Builder.Character.SetFallAnimation(new Point(4, 4 ), new Point(4, 4), 5);
+        stage1.Builder.Character.SetGetHitAnimation(new Point(4, 5), new Point(4, 7), 5);
+        stage1.Builder.Character.SetAttackAnimation(new Point(1, 8), new Point(2, 3), 5);
     }
 
     protected override void Update(GameTime gameTime) {

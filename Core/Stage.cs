@@ -65,8 +65,6 @@ public class Stage {
     
     public void Draw(SpriteBatch spriteBatch) {
         Background.Draw(spriteBatch);
-        
-        Character.Draw(spriteBatch);
 
         for (int row = 0; row < Rows; row++)
         {
@@ -76,6 +74,8 @@ public class Stage {
                 tiles[row, col].Draw(spriteBatch);
             }
         }
+        
+        Character.Draw(spriteBatch);
     }
     
     // --- STATIC METHODS ---
@@ -85,6 +85,4 @@ public class Stage {
     public static void SetTileSize(int size) {
         tileSize = size;
     }
-    
-    // --- INSTANCE METHODS ---
 }

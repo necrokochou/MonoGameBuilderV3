@@ -9,9 +9,7 @@ public class Animation {
     // FIELDS
     private Character character;
     private int counter;
-    private int frames;
     private int interval;
-    private int currentFrame;
     private int columnPos;
     private int rowPos;
 
@@ -20,12 +18,11 @@ public class Animation {
 
 
     // CONSTRUCTORS
-    internal Animation(Character character, int interval, Point startFrame, Point endFrame) {
+    internal Animation(Character character, Point startFrame, Point endFrame, int interval) {
         this.character = character;
-        this.interval = interval;
         this.startFrame = startFrame;
         this.endFrame = endFrame;
-        frames = endFrame.Y - startFrame.Y + 1;
+        this.interval = interval;
     }
 
 
@@ -36,47 +33,50 @@ public class Animation {
     private int SourceHeight {
         get => character.Source.Height;
     }
+    private int Rows {
+        get => character.Rows;
+    }
+    private int Columns {
+        get => character.Columns;
+    }
 
 
     // METHODS
     // --- MAIN METHODS ---
     internal void Update() {
         counter++;
-        if (counter > interval) {
+        if (counter >= interval) {
             counter = 0;
             NextFrame();
         }
     }
     
     // --- STATIC METHODS ---
-    public static Animation Create(Character character, int interval, Point startFrame, Point endFrame) {
-        return new(character, interval, startFrame, endFrame);
+    public static Animation Create(Character character, Point startFrame, Point endFrame, int interval) {
+        return new(character, startFrame, endFrame, interval);
     }
     
     // --- INSTANCE METHODS ---
     private void NextFrame() {
-        currentFrame++;
         columnPos++;
 
-        if (columnPos > endFrame.Y) {
+        if (columnPos >= Columns) {
             columnPos = 0;
             rowPos++;
         }
         
-        if (rowPos > endFrame.X) Reset();
+        if (rowPos > endFrame.X || (rowPos == endFrame.X && columnPos > endFrame.Y)) Reset();
         
-        Console.WriteLine("Frame: " + currentFrame + " | Column: " + columnPos + " | Row: " + rowPos + " |");
     }
     
     private void Reset() {
-        currentFrame = 0;
         rowPos = startFrame.X;
         columnPos = startFrame.Y;
         
     }
 
-    public Rectangle GetFrame() {
-        return new Rectangle(
+    internal Rectangle GetFrame() {
+        return new(
             columnPos * SourceWidth,
             rowPos * SourceHeight,
             SourceWidth,

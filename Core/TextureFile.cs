@@ -12,6 +12,8 @@ public class TextureFile {
     private int columns;
     private int width;
     private int height;
+    private int frameWidth;
+    private int frameHeight;
 
 
     // CONSTRUCTORS
@@ -61,6 +63,11 @@ public class TextureFile {
     }
     
     internal Rectangle SetSource(int row, int column) {
-        return new(Width / Columns * column, Height / Rows * row, Width / Columns, Height / Rows);
+        frameWidth = Width / Columns;
+        frameHeight = Height / Rows;
+        
+        return new(frameWidth * column, frameHeight * row, frameWidth, frameHeight);
+        
+        // return new(Width / Columns * column, Height / Rows * row, Width / Columns, Height / Rows);
     }
 }

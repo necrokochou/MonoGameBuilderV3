@@ -19,11 +19,11 @@ public class Builder {
 
     // PROPERTIES
     // --- INSTANCE PROPERTIES ---
-    private Tile[,] Tiles {
-        get => stage.Tiles;
-    }
     private Background Background {
         set => stage.Background = value;
+    }
+    private Tile[,] Tiles {
+        get => stage.Tiles;
     }
     public Character Character {
         get => stage.Character;
@@ -84,6 +84,7 @@ public class Builder {
         
         AddTiles(tile, row - height + 1, row + 1, column, column + width);
     }
+
     
     // --- EXCEPTION METHODS ---
     private void ValidatePosition(int row, int column) {

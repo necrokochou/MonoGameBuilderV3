@@ -16,9 +16,6 @@
         <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*"/>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="Core\" />
-    </ItemGroup>
-    <ItemGroup>
       <ProjectReference Include="..\Core\Core.csproj" />
     </ItemGroup>
     <Target Name="RestoreDotnetTools" BeforeTargets="CollectPackageReferences">

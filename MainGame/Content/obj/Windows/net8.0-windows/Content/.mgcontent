@@ -7,6 +7,7 @@
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/FrostLeaves.png</File>
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/FrostRocks.png</File>
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/GameBackground7.png</File>
+    <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/GoldCoin.png</File>
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/HeroKnight.png</File>
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/Plants.png</File>
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/RockBlocks.png</File>
@@ -15,6 +16,7 @@
     <File>E:/.personalcode/Rider Projects/MonoGameBuilderV3/MainGame/Content/Stones2.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
